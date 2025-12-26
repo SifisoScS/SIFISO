@@ -1,0 +1,2 @@
+- [x] Define a level1 object in App.tsx with all required Level fields (id, title, concept, instructions, starterCode, expectedOutput, hints)
+- [x] Update ExerciseRunner props to pass level={level1} and remove invalid props (description, expectedOutput)
