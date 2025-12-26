@@ -1,64 +1,87 @@
-import { useState } from "react"
-import type { Level } from "../models/Level"
-import { CodeEditor } from "./CodeEditor"
-import { FeedbackPanel } from "./FeedbackPanel"
-import { LevelViewer } from "./LevelViewer"
+  import { useState, useEffect } from 'react'
+  import { CodeEditor } from './CodeEditor'
+  import { FeedbackPanel } from './FeedbackPanel'
+  import { LevelViewer } from './LevelViewer'
+  import { ProgressBar } from './ProgressBar'
+  import type { Level } from '../models/Level'
+  import { HintsPanel } from './HintsPanel'
 
-interface ExerciseRunnerProps {
-  level: Level
-}
 
-export function ExerciseRunner({ level }: ExerciseRunnerProps) {
-  const [code, setCode] = useState("")
-  const [output, setOutput] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const STORAGE_KEY = 'sifiso_current_level'
 
-  async function runCode() {
-    setLoading(true)
-    setOutput(null)
-    setError(null)
-
-    try {
-      const response = await fetch("http://localhost:8000/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      })
-
-      const result = await response.json()
-
-      if (result.error && result.error.trim() !== "") {
-        setError(result.error)
-      } else {
-        setOutput(result.output)
-      }
-    } catch {
-      setError("Unable to reach execution server.")
-    } finally {
-      setLoading(false)
-    }
+  interface ExerciseRunnerProps {
+    levels: Level[]
   }
 
-  return (
-    <div className="space-y-6">
-      <LevelViewer level={level} />
+  export function ExerciseRunner({ levels }: ExerciseRunnerProps) {
+    const [currentLevelIndex, setCurrentLevelIndex] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    return saved ? Number(saved) : 0
+  })
 
-      <CodeEditor code={code} onChange={setCode} />
+    const [output, setOutput] = useState<string | null>(null)
+    const [error, setError] = useState<string | null>(null)
+    const [revealedHints, setRevealedHints] = useState(0)
 
-      <button
-        onClick={runCode}
-        disabled={loading}
-        className="px-4 py-2 bg-primary text-white rounded"
-      >
-        {loading ? "Running..." : "Run Code"}
-      </button>
 
-      <FeedbackPanel
-        output={output}
-        error={error}
-        expectedOutput={level.expectedOutput}
-      />
-    </div>
-  )
-}
+    useEffect(() => {
+      localStorage.setItem(
+        STORAGE_KEY,
+        currentLevelIndex.toString()
+      )
+    }, [currentLevelIndex])
+
+    const level = levels[currentLevelIndex]
+
+    const handleRunResult = (result: {
+      output: string | null
+      error: string | null
+    }) => {
+      setOutput(result.output)
+      setError(result.error)
+
+      if (
+    result.output !== null &&
+    result.output.trim() === level.expectedOutput.trim()
+  ) {
+    setTimeout(() => {
+      if (currentLevelIndex < levels.length - 1) {
+        setCurrentLevelIndex((i) => i + 1)
+        setOutput(null)
+        setError(null)
+        setRevealedHints(0)
+      }
+    }, 800)
+  }
+    }
+
+    return (
+      <div className="space-y-6">
+        <ProgressBar
+          current={currentLevelIndex + 1}
+          total={levels.length}
+        />
+
+        <LevelViewer level={level} />
+
+        <CodeEditor
+          starterCode={level.starterCode}
+          onRun={handleRunResult}
+        />
+
+        <FeedbackPanel
+          output={output}
+          error={error}
+          expectedOutput={level.expectedOutput}
+        />
+        <HintsPanel
+    hints={level.hints}
+    revealedCount={revealedHints}
+    onRevealNext={() =>
+      setRevealedHints((count) => count + 1)
+    }
+  />
+
+      </div>
+    )
+  }

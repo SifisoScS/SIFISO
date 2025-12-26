@@ -1,45 +1,50 @@
+import { useEffect } from 'react'
+
 interface FeedbackPanelProps {
   output: string | null
   error: string | null
   expectedOutput: string
+  onSuccess?: () => void
 }
 
 export function FeedbackPanel({
   output,
   error,
   expectedOutput,
+  onSuccess,
 }: FeedbackPanelProps) {
+  const isCorrect =
+    output !== null &&
+    !error &&
+    output.trim() === expectedOutput.trim()
+
+  useEffect(() => {
+    if (isCorrect && onSuccess) {
+      onSuccess()
+    }
+  }, [isCorrect, onSuccess])
+
   if (!output && !error) return null
 
   if (error) {
     return (
-      <div className="mt-4 p-4 border-l-4 border-red-500 bg-red-50">
-        <h3 className="font-semibold text-red-700">Error</h3>
-        <pre className="text-red-600 mt-2">{error}</pre>
+      <div className="text-red-600 font-mono">
+        Error: {error}
       </div>
     )
   }
 
-  const isCorrect =
-  output !== null && output.trim() === expectedOutput.trim()
-
-
   return (
     <div
-      className={`mt-4 p-4 border-l-4 ${
-        isCorrect
-          ? 'border-green-500 bg-green-50'
-          : 'border-yellow-500 bg-yellow-50'
-      }`}
+      className={
+        isCorrect ? "text-green-600" : "text-red-600"
+      }
     >
-      <h3 className="font-semibold">
-        {isCorrect ? 'Correct' : 'Incorrect'}
-      </h3>
-
+      {isCorrect ? "Correct!" : "Incorrect"}
       {!isCorrect && (
-        <p className="mt-2 text-sm text-gray-700">
-          Expected output: <strong>{expectedOutput}</strong>
-        </p>
+        <div className="mt-2 text-sm">
+          Expected output: {expectedOutput}
+        </div>
       )}
     </div>
   )
