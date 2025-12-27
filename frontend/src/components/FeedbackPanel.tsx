@@ -18,6 +18,18 @@ export function FeedbackPanel({
 }: FeedbackPanelProps) {
   const hasTriggeredSuccess = useRef(false)
 
+  // Debug logging
+  console.log('RAW output:', JSON.stringify(output))
+  console.log('RAW expected:', JSON.stringify(expectedOutput))
+  console.log(
+    'NORMALIZED output:',
+    JSON.stringify(output ? normalizeOutput(output) : null)
+  )
+  console.log(
+    'NORMALIZED expected:',
+    JSON.stringify(normalizeOutput(expectedOutput))
+  )
+
   const isCorrect =
     output !== null &&
     !error &&

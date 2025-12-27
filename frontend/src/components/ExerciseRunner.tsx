@@ -24,7 +24,7 @@ export function ExerciseRunner({
   curriculumKey,
 }: ExerciseRunnerProps) {
   const STORAGE_KEY = `sifiso_${curriculumKey}_current_level`
-  
+
   const [currentLevelIndex, setCurrentLevelIndex] = useState(() => {
     const raw = localStorage.getItem(STORAGE_KEY)
     const parsed = Number(raw)
@@ -36,19 +36,20 @@ export function ExerciseRunner({
     return parsed
   })
 
+  /* Phase 18 — learn → practice */
+  const [mode, setMode] = useState<'learn' | 'practice'>('learn')
+
   const [code, setCode] = useState('')
   const [output, setOutput] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [revealedHints, setRevealedHints] = useState(0)
   const [masteredLevels, setMasteredLevels] = useState<number[]>([])
 
-  // Phase 12 — exam mode
+  /* Phase 12 — exam / educator modes */
   const [examMode, setExamMode] = useState(false)
-  
-  // Phase 12 — educator mode
   const [educatorMode, setEducatorMode] = useState(false)
 
-  // Phase 11 — streak & confidence
+  /* Phase 11 — streak & confidence */
   const [streak, setStreak] = useState(0)
   const [hasUsedHint, setHasUsedHint] = useState(false)
 
@@ -56,18 +57,17 @@ export function ExerciseRunner({
   const [, startTransition] = useTransition()
 
   const level = levels[currentLevelIndex]
-  
-  // Compute readiness for exam
   const readiness = computeReadiness(levels, masteredLevels)
 
   /* Persist progress */
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, currentLevelIndex.toString())
-  }, [currentLevelIndex])
+  }, [currentLevelIndex, STORAGE_KEY])
 
-  /* Reset editor + state when level changes */
+  /* Reset state on level change */
   useEffect(() => {
     startTransition(() => {
+      setMode('learn')
       setCode(level.starterCode)
       setOutput(null)
       setError(null)
@@ -86,10 +86,8 @@ export function ExerciseRunner({
   }, [])
 
   const handleRun = async () => {
-    // Exam mode: lock retries after first submission
     if (examMode && output !== null) return
-    
-    // Any attempt resets confidence unless success is earned
+
     setStreak(0)
 
     try {
@@ -147,92 +145,124 @@ export function ExerciseRunner({
     }, 800)
   }
 
-
   return (
-    <div className="space-y-6">
-      <ProgressBar
-        current={currentLevelIndex + 1}
-        total={levels.length}
-      />
+    <div className="space-y-10">
 
-      <div className="text-sm text-gray-700">
-        Exam readiness: <strong>{readiness.score}%</strong>
-      </div>
-      
-      {readiness.weak.length > 0 && (
-        <div className="text-xs text-gray-500">
-          Focus areas: {readiness.weak.join(', ')}
-        </div>
-      )}
-
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={examMode}
-          onChange={() => setExamMode((v) => !v)}
+      {/* Top: Progress & Status */}
+      <section className="space-y-2">
+        <ProgressBar
+          current={currentLevelIndex + 1}
+          total={levels.length}
         />
-        Exam mode
-      </label>
-      
-      <label className="flex items-center gap-2 text-xs text-gray-500">
-        <input
-          type="checkbox"
-          checked={educatorMode}
-          onChange={() => setEducatorMode((v) => !v)}
-        />
-        Educator mode
-      </label>
 
-      {streak > 0 && (
-        <div className="text-sm text-green-700">
-          🔥 Current streak: {streak}
+        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+          <div>
+            Exam readiness: <strong>{readiness.score}%</strong>
+          </div>
+
+          {streak > 0 && (
+            <div className="text-green-700">
+              🔥 Current streak: {streak}
+            </div>
+          )}
         </div>
-      )}
 
-      <LevelSelector
-        levels={levels}
-        currentIndex={currentLevelIndex}
-        masteredLevels={masteredLevels}
-        onSelect={(index) => {
-          setCurrentLevelIndex(index)
-          setOutput(null)
-          setError(null)
-          setRevealedHints(0)
-          setHasUsedHint(false)
-        }}
-      />
+        <div className="flex gap-4 text-xs text-gray-500">
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={examMode}
+              onChange={() => setExamMode((v) => !v)}
+            />
+            Exam mode
+          </label>
 
-      <LevelViewer level={level} />
-      
-      {educatorMode && (
-        <div className="text-xs text-gray-500">
-          Objectives: {level.objectives.join(', ')}
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={educatorMode}
+              onChange={() => setEducatorMode((v) => !v)}
+            />
+            Educator mode
+          </label>
         </div>
-      )}
+      </section>
 
-      <CodeEditor
-        value={code}
-        onChange={setCode}
-        onRunClick={handleRun}
-      />
-
-      <FeedbackPanel
-        output={output}
-        error={error}
-        expectedOutput={level.expectedOutput}
-        examMode={examMode}
-        onSuccess={handleSuccess}
-      />
-
-      {!examMode && (
-        <HintsPanel
-          hints={level.hints}
-          revealedCount={revealedHints}
-          onRevealNext={() => {
-            setRevealedHints((count) => count + 1)
-            setHasUsedHint(true)
+      {/* Level Selector */}
+      <section>
+        <LevelSelector
+          levels={levels}
+          currentIndex={currentLevelIndex}
+          masteredLevels={masteredLevels}
+          onSelect={(index) => {
+            setCurrentLevelIndex(index)
+            setOutput(null)
+            setError(null)
+            setRevealedHints(0)
+            setHasUsedHint(false)
           }}
         />
+      </section>
+
+      {/* Learning Panel */}
+      <section className="bg-white rounded-lg border shadow-sm">
+        <div className="p-6 space-y-4">
+          <LevelViewer level={level} />
+
+          {educatorMode && (
+            <div className="text-xs text-gray-500">
+              Objectives: {level.objectives.join(', ')}
+            </div>
+          )}
+
+          {mode === 'learn' && (
+            <div className="pt-4">
+              <button
+                onClick={() => setMode('practice')}
+                className="px-6 py-2 bg-primary text-white rounded hover:opacity-90"
+              >
+                Start coding
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Practice Panel */}
+      {mode === 'practice' && (
+        <section className="bg-gray-50 rounded-lg border">
+          <div className="p-6 space-y-4">
+            <CodeEditor
+              value={code}
+              onChange={setCode}
+              onRunClick={handleRun}
+            />
+
+            <FeedbackPanel
+              output={output}
+              error={error}
+              expectedOutput={level.expectedOutput}
+              examMode={examMode}
+              onSuccess={handleSuccess}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Support Panel */}
+      {mode === 'practice' && !examMode && (
+        <section className="bg-white rounded-lg border">
+          <div className="p-6">
+            <HintsPanel
+              hints={level.hints}
+              revealedCount={revealedHints}
+              onRevealNext={() => {
+                setRevealedHints((count) => count + 1)
+                setHasUsedHint(true)
+              }}
+            />
+          </div>
+        </section>
       )}
     </div>
   )
