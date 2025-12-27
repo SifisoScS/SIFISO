@@ -1,3 +1,5 @@
+import type { PCEPObjective } from '../data/pcepObjectives'
+
 export interface Level {
   id: number
   title: string
@@ -6,4 +8,5 @@ export interface Level {
   starterCode: string
   expectedOutput: string
   hints: string[]
+  objectives: PCEPObjective[]
 }
