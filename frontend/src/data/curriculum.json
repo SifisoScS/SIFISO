@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "title": "SIFISO – Python PCEP Foundations",
+    "version": "1.0",
+    "certification": "PCEP",
+    "author": "SIFISO Project"
+  },
+  "levels": [
+    {
+      "id": 1,
+      "title": "Hello, World",
+      "concept": "The print() function outputs text to the screen.",
+      "instructions": "Write a Python program that prints exactly: Hello, World",
+      "starterCode": "",
+      "expectedOutput": "Hello, World",
+      "hints": [
+        "Use the print() function.",
+        "Wrap the text in quotes."
+      ],
+      "objectives": ["print", "strings"]
+    }
+  ]
+}
